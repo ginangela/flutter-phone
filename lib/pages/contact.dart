@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_phone/pages/add_contact.dart';
 import 'package:flutter_phone/pages/edit_contact.dart';
+import 'package:flutter_phone/pages/detail_contact.dart';
 import 'package:flutter_phone/db/database_helper.dart';
 import 'package:flutter_phone/models/contact_model.dart';
 
@@ -34,7 +35,6 @@ class _ContactsPageState extends State<ContactsPage> {
     final dbHelper = DatabaseHelper();
     final existingContacts = await dbHelper.getAllContacts();
 
-    // Hanya insert jika kosong agar tidak dobel terus
     if (existingContacts.isEmpty) {
       await dbHelper.insertContact(
         Contact(
@@ -44,9 +44,7 @@ class _ContactsPageState extends State<ContactsPage> {
           label: 'Personal',
         ),
       );
-      setState(() {
-        _loadContacts(); // refresh daftar
-      });
+      _loadContacts(); // Memuat ulang tanpa perlu setState karena ada di dalam _loadContacts
     }
   }
 
@@ -54,11 +52,13 @@ class _ContactsPageState extends State<ContactsPage> {
   void initState() {
     super.initState();
     _loadContacts();
-    _insertDummyContact(); // ← panggil ini
+    _insertDummyContact();
   }
 
   void _loadContacts() {
-    _contactsFuture = DatabaseHelper().getAllContacts();
+    setState(() {
+      _contactsFuture = DatabaseHelper().getAllContacts();
+    });
   }
 
   @override
@@ -138,7 +138,28 @@ class _ContactsPageState extends State<ContactsPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     itemCount: contacts.length,
                     itemBuilder: (context, index) {
-                      return ContactCard(contact: contacts[index]);
+                      final contact = contacts[index];
+                      return GestureDetector(
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ContactDetailPage(
+                                id: contact.id,
+                                name: contact.name,
+                                phone: contact.phone,
+                                email: contact.email ?? 'email',
+                                label: contact.label,
+                              ),
+                            ),
+                          );
+
+                          if (result == true) {
+                            _loadContacts(); // Reload setelah edit
+                          }
+                        },
+                        child: ContactCard(contact: contact),
+                      );
                     },
                   );
                 }
@@ -150,13 +171,14 @@ class _ContactsPageState extends State<ContactsPage> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepPurple,
         onPressed: () async {
-          await Navigator.push(
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddContactPage()),
           );
-          setState(() {
-            _loadContacts();
-          });
+
+          if (result == true) {
+            _loadContacts(); // Reload setelah tambah kontak
+          }
         },
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -170,40 +192,30 @@ class ContactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EditContactPage(contact: contact),
-          ),
-        );
-      },
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 3,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 25,
-                backgroundImage: NetworkImage(
-                  'https://i.pinimg.com/originals/12/4a/7f/124a7fbab2c9d8c61ff8c55537019aa6.jpg',
-                ),
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 25,
+              backgroundImage: NetworkImage(
+                'https://i.pinimg.com/originals/12/4a/7f/124a7fbab2c9d8c61ff8c55537019aa6.jpg',
               ),
-              const SizedBox(width: 20),
-              Text(
-                contact.name,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.blue.shade600,
-                ),
+            ),
+            const SizedBox(width: 20),
+            Text(
+              contact.name,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue.shade600,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
