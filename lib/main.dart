@@ -6,19 +6,25 @@ import 'pages/contact.dart';
 import 'pages/add_contact.dart';
 import 'pages/edit_contact.dart';
 import 'models/contact_model.dart';
+import 'package:path/path.dart';
+
+
+
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();  // Pastikan binding diinisialisasi terlebih dahulu
+  WidgetsFlutterBinding.ensureInitialized();
 
   if (kIsWeb) {
-    databaseFactory = databaseFactoryFfiWeb; // Gunakan untuk web
+    databaseFactory = databaseFactoryFfiWeb;
   } else {
     sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi; // Untuk platform selain web
+    databaseFactory = databaseFactoryFfi;
+
   }
 
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

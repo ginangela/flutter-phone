@@ -29,7 +29,9 @@ class ContactsPage extends StatefulWidget {
 }
 
 class _ContactsPageState extends State<ContactsPage> {
-  late Future<List<Contact>> _contactsFuture;
+  final TextEditingController _searchController = TextEditingController();
+  List<Contact> _allContacts = [];
+  List<Contact> _filteredContacts = [];
 
   void _insertDummyContact() async {
     final dbHelper = DatabaseHelper();
@@ -44,7 +46,7 @@ class _ContactsPageState extends State<ContactsPage> {
           label: 'Personal',
         ),
       );
-      _loadContacts(); // Memuat ulang tanpa perlu setState karena ada di dalam _loadContacts
+      _loadContacts();
     }
   }
 
@@ -55,9 +57,24 @@ class _ContactsPageState extends State<ContactsPage> {
     _insertDummyContact();
   }
 
-  void _loadContacts() {
+  void _loadContacts() async {
+    final contacts = await DatabaseHelper().getAllContacts();
     setState(() {
-      _contactsFuture = DatabaseHelper().getAllContacts();
+      _allContacts = contacts;
+      _filteredContacts = contacts;
+    });
+  }
+
+  void _searchContacts(String query) {
+    final filtered = _allContacts.where((contact) {
+      final nameLower = contact.name.toLowerCase();
+      final phoneLower = contact.phone.toLowerCase();
+      final searchLower = query.toLowerCase();
+      return nameLower.contains(searchLower) || phoneLower.contains(searchLower);
+    }).toList();
+
+    setState(() {
+      _filteredContacts = filtered;
     });
   }
 
@@ -108,6 +125,8 @@ class _ContactsPageState extends State<ContactsPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
+              controller: _searchController,
+              onChanged: _searchContacts,
               decoration: InputDecoration(
                 hintText: 'Search contacts',
                 prefixIcon: Icon(Icons.search, color: Colors.deepPurple),
@@ -123,22 +142,13 @@ class _ContactsPageState extends State<ContactsPage> {
           ),
           const SizedBox(height: 20),
           Expanded(
-            child: FutureBuilder<List<Contact>>(
-              future: _contactsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return const Center(child: Text('Gagal memuat kontak'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Belum ada kontak'));
-                } else {
-                  final contacts = snapshot.data!;
-                  return ListView.builder(
+            child: _filteredContacts.isEmpty
+                ? const Center(child: Text('Kontak tidak ditemukan'))
+                : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: contacts.length,
+                    itemCount: _filteredContacts.length,
                     itemBuilder: (context, index) {
-                      final contact = contacts[index];
+                      final contact = _filteredContacts[index];
                       return GestureDetector(
                         onTap: () async {
                           final result = await Navigator.push(
@@ -161,10 +171,7 @@ class _ContactsPageState extends State<ContactsPage> {
                         child: ContactCard(contact: contact),
                       );
                     },
-                  );
-                }
-              },
-            ),
+                  ),
           ),
         ],
       ),

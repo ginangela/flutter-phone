@@ -27,7 +27,8 @@ class DatabaseHelper {
             name TEXT,
             phone TEXT,
             email TEXT,
-            label TEXT
+            label TEXT,
+            profileImage TEXT
           )
         ''');
       },

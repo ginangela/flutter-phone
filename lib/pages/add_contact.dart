@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../db/database_helper.dart';
 import '../models/contact_model.dart';
-
+import 'package:flutter_phone/pages/detail_contact.dart';
 
 class AddContactPage extends StatefulWidget {
   const AddContactPage({super.key});
@@ -17,61 +17,77 @@ class _AddContactPageState extends State<AddContactPage> {
 
   bool showMore = false;
   String? selectedLabel;
-
   final List<String> labelOptions = ['Personal', 'Work'];
 
   void saveContact() async {
-  String name = nameController.text.trim();
-  String phone = phoneController.text.trim();
-  String email = emailController.text.trim();
+    String name = nameController.text.trim();
+    String phone = phoneController.text.trim();
+    String email = emailController.text.trim();
 
-  if (name.isEmpty || phone.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please fill in Name and Phone'),
-        backgroundColor: Colors.red,
-      ),
+    if (name.isEmpty || phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Harap isi Nama dan Telepon'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    Contact newContact = Contact(
+      name: name,
+      phone: phone,
+      email: email.isEmpty ? null : email,
+      label: selectedLabel ?? 'Personal',
     );
-    return;
+
+    // Tampilkan loading spinner
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // Simpan kontak dan ambil ID-nya
+      int insertedId = await DatabaseHelper().insertContact(newContact);
+      newContact.id = insertedId;
+
+      Navigator.pop(context); // Tutup spinner
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kontak berhasil disimpan'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Arahkan ke halaman detail kontak
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => ContactDetailPage(
+                id: newContact.id!,
+                name: newContact.name,
+                phone: newContact.phone,
+                email: newContact.email ?? '',
+                label: newContact.label,
+                profileImage: newContact.profileImage,
+              ),
+        ),
+      );
+    } catch (e) {
+      Navigator.pop(context); // Tutup spinner jika error
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan kontak: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-
-  Contact newContact = Contact(
-    name: name,
-    phone: phone,
-    email: email.isEmpty ? null : email,
-    label: selectedLabel ?? 'Personal',
-  );
-
-  // Tampilkan loading
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => const Center(child: CircularProgressIndicator()),
-  );
-
-  try {
-    await DatabaseHelper().insertContact(newContact);
-    Navigator.pop(context); // tutup loading
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Contact saved successfully'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    Navigator.pop(context); // kembali ke halaman sebelumnya
-  } catch (e) {
-    Navigator.pop(context); // tutup loading
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Failed to save contact: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +96,12 @@ class _AddContactPageState extends State<AddContactPage> {
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 30),
+            padding: const EdgeInsets.only(
+              top: 60,
+              left: 20,
+              right: 20,
+              bottom: 30,
+            ),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
@@ -102,7 +123,7 @@ class _AddContactPageState extends State<AddContactPage> {
             child: const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'New Contact',
+                'Kontak Baru',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -142,13 +163,13 @@ class _AddContactPageState extends State<AddContactPage> {
               children: [
                 CustomInputField(
                   icon: Icons.person_outline,
-                  hint: 'Name',
+                  hint: 'Nama',
                   controller: nameController,
                 ),
                 const SizedBox(height: 16),
                 CustomInputField(
                   icon: Icons.phone_outlined,
-                  hint: 'Phone',
+                  hint: 'Telepon',
                   controller: phoneController,
                   keyboardType: TextInputType.phone,
                 ),
@@ -174,16 +195,17 @@ class _AddContactPageState extends State<AddContactPage> {
                           children: const [
                             Icon(Icons.label_outline, color: Colors.deepPurple),
                             SizedBox(width: 8),
-                            Text('Labels'),
+                            Text('Label'),
                           ],
                         ),
                         isExpanded: true,
-                        items: labelOptions.map((label) {
-                          return DropdownMenuItem<String>(
-                            value: label,
-                            child: Text(label),
-                          );
-                        }).toList(),
+                        items:
+                            labelOptions.map((label) {
+                              return DropdownMenuItem<String>(
+                                value: label,
+                                child: Text(label),
+                              );
+                            }).toList(),
                         onChanged: (value) {
                           setState(() {
                             selectedLabel = value;
@@ -208,7 +230,7 @@ class _AddContactPageState extends State<AddContactPage> {
               color: Colors.deepPurple,
             ),
             label: Text(
-              showMore ? "Show less" : "Show more",
+              showMore ? "Tampilkan lebih sedikit" : "Tampilkan lebih banyak",
               style: const TextStyle(color: Colors.deepPurple),
             ),
           ),
@@ -230,7 +252,7 @@ class _AddContactPageState extends State<AddContactPage> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: const Text(
-                      'Save',
+                      'Simpan',
                       style: TextStyle(color: Colors.deepPurple),
                     ),
                   ),
@@ -250,7 +272,7 @@ class _AddContactPageState extends State<AddContactPage> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: const Text(
-                      'Cancel',
+                      'Batal',
                       style: TextStyle(color: Colors.deepPurple),
                     ),
                   ),
