@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_phone/pages/add_contact.dart';
+import 'package:flutter_phone/pages/edit_contact.dart';
 
 void main() {
   runApp(const ContactsApp());
@@ -22,6 +23,13 @@ class ContactsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final List<Map<String, String>> contacts = [
+      {'name': 'Virginia Angel'},
+      {'name': 'John Doe'},
+      {'name': 'Jane Smith'},
+      {'name': 'Albert Einstein'},
+    ];
+
     return Scaffold(
       backgroundColor: const Color(0xFFEDEDED),
       body: Column(
@@ -84,9 +92,9 @@ class ContactsPage extends StatelessWidget {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: 4,
+              itemCount: contacts.length,
               itemBuilder: (context, index) {
-                return const ContactCard();
+                return ContactCard(contact: contacts[index]);
               },
             ),
           ),
@@ -118,34 +126,45 @@ class ContactsPage extends StatelessWidget {
 }
 
 class ContactCard extends StatelessWidget {
-  const ContactCard({super.key});
+  final Map<String, String> contact;
+  const ContactCard({super.key, required this.contact});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              radius: 25,
-              backgroundImage: NetworkImage(
-                'https://i.pinimg.com/originals/12/4a/7f/124a7fbab2c9d8c61ff8c55537019aa6.jpg',
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EditContactPage(contact: contact),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 3,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 25,
+                backgroundImage: NetworkImage(
+                  'https://i.pinimg.com/originals/12/4a/7f/124a7fbab2c9d8c61ff8c55537019aa6.jpg',
+                ),
               ),
-            ),
-            const SizedBox(width: 20),
-            Text(
-              'Virginia Angel',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.blue.shade600,
+              const SizedBox(width: 20),
+              Text(
+                contact['name'] ?? 'Unknown',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.blue.shade600,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
