@@ -1,7 +1,42 @@
 import 'package:flutter/material.dart';
 
-class AddContactPage extends StatelessWidget {
+class AddContactPage extends StatefulWidget {
   const AddContactPage({super.key});
+
+  @override
+  State<AddContactPage> createState() => _AddContactPageState();
+}
+
+class _AddContactPageState extends State<AddContactPage> {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+
+  bool showMore = false;
+  String? selectedLabel;
+
+  final List<String> labelOptions = ['Personal', 'Work'];
+
+  void saveContact() {
+    String name = nameController.text.trim();
+    String phone = phoneController.text.trim();
+    String email = emailController.text.trim();
+
+    if (name.isEmpty || phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in Name and Phone')),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Saved: $name, $phone, $email, Label: ${selectedLabel ?? "-"}'),
+      ),
+    );
+
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,20 +104,77 @@ class AddContactPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
-              children: const [
-                CustomInputField(icon: Icons.person_outline, hint: 'Name'),
-                SizedBox(height: 16),
-                CustomInputField(icon: Icons.phone_outlined, hint: 'Phone'),
+              children: [
+                CustomInputField(
+                  icon: Icons.person_outline,
+                  hint: 'Name',
+                  controller: nameController,
+                ),
+                const SizedBox(height: 16),
+                CustomInputField(
+                  icon: Icons.phone_outlined,
+                  hint: 'Phone',
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                ),
+                if (showMore) ...[
+                  const SizedBox(height: 16),
+                  CustomInputField(
+                    icon: Icons.email_outlined,
+                    hint: 'Email',
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedLabel,
+                        hint: Row(
+                          children: const [
+                            Icon(Icons.label_outline, color: Colors.deepPurple),
+                            SizedBox(width: 8),
+                            Text('Labels'),
+                          ],
+                        ),
+                        isExpanded: true,
+                        items: labelOptions.map((label) {
+                          return DropdownMenuItem<String>(
+                            value: label,
+                            child: Text(label),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedLabel = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 20),
           TextButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.expand_more, color: Colors.deepPurple),
-            label: const Text(
-              "Show more",
-              style: TextStyle(color: Colors.deepPurple),
+            onPressed: () {
+              setState(() {
+                showMore = !showMore;
+              });
+            },
+            icon: Icon(
+              showMore ? Icons.expand_less : Icons.expand_more,
+              color: Colors.deepPurple,
+            ),
+            label: Text(
+              showMore ? "Show less" : "Show more",
+              style: const TextStyle(color: Colors.deepPurple),
             ),
           ),
           const Spacer(),
@@ -93,7 +185,7 @@ class AddContactPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: saveContact,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
@@ -140,12 +232,22 @@ class AddContactPage extends StatelessWidget {
 class CustomInputField extends StatelessWidget {
   final IconData icon;
   final String hint;
+  final TextEditingController controller;
+  final TextInputType keyboardType;
 
-  const CustomInputField({super.key, required this.icon, required this.hint});
+  const CustomInputField({
+    super.key,
+    required this.icon,
+    required this.hint,
+    required this.controller,
+    this.keyboardType = TextInputType.text,
+  });
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: Colors.deepPurple),
         hintText: hint,
