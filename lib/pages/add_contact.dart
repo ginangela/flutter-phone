@@ -1,8 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'detail_contact.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
+import '../db/database_helper.dart';
+import '../models/contact_model.dart';
+
 
 class AddContactPage extends StatefulWidget {
   const AddContactPage({super.key});
@@ -18,53 +17,61 @@ class _AddContactPageState extends State<AddContactPage> {
 
   bool showMore = false;
   String? selectedLabel;
-  File? _profileImage;
 
   final List<String> labelOptions = ['Personal', 'Work'];
 
-  Future<void> _pickImage() async {
-    var status = await Permission.photos.request(); // atau Permission.storage untuk Android
+  void saveContact() async {
+  String name = nameController.text.trim();
+  String phone = phoneController.text.trim();
+  String email = emailController.text.trim();
 
-    if (status.isGranted) {
-      final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        setState(() {
-          _profileImage = File(pickedFile.path);
-        });
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Permission denied')),
-      );
-    }
+  if (name.isEmpty || phone.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please fill in Name and Phone'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
   }
 
+  Contact newContact = Contact(
+    name: name,
+    phone: phone,
+    email: email.isEmpty ? null : email,
+    label: selectedLabel ?? 'Personal',
+  );
 
-  void saveContact() {
-    String name = nameController.text.trim();
-    String phone = phoneController.text.trim();
-    String email = emailController.text.trim();
+  // Tampilkan loading
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(child: CircularProgressIndicator()),
+  );
 
-    if (name.isEmpty || phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in Name and Phone')),
-      );
-      return;
-    }
+  try {
+    await DatabaseHelper().insertContact(newContact);
+    Navigator.pop(context); // tutup loading
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ContactDetailPage(
-          name: name,
-          phone: phone,
-          email: email,
-          label: selectedLabel,
-          profileImage: _profileImage,
-        ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Contact saved successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    Navigator.pop(context); // kembali ke halaman sebelumnya
+  } catch (e) {
+    Navigator.pop(context); // tutup loading
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to save contact: $e'),
+        backgroundColor: Colors.red,
       ),
     );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -108,28 +115,22 @@ class _AddContactPageState extends State<AddContactPage> {
           Stack(
             alignment: Alignment.bottomRight,
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 radius: 50,
                 backgroundColor: Colors.black26,
-                backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
-                child: _profileImage == null
-                    ? const Icon(Icons.person, size: 60, color: Colors.white)
-                    : null,
+                child: Icon(Icons.person, size: 60, color: Colors.white),
               ),
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  margin: const EdgeInsets.only(right: 4, bottom: 4),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
-                    ),
+              Container(
+                margin: const EdgeInsets.only(right: 4, bottom: 4),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
                   ),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.add, color: Colors.white, size: 16),
-                  ),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.add, color: Colors.white, size: 16),
                 ),
               ),
             ],

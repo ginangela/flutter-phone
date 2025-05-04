@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_phone/pages/add_contact.dart';
 import 'package:flutter_phone/pages/edit_contact.dart';
+import 'package:flutter_phone/db/database_helper.dart';
+import 'package:flutter_phone/models/contact_model.dart';
 
 void main() {
   runApp(const ContactsApp());
@@ -13,9 +15,6 @@ class ContactsApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Poppins',
-      ),
       home: const ContactsPage(),
     );
   }
@@ -29,37 +28,37 @@ class ContactsPage extends StatefulWidget {
 }
 
 class _ContactsPageState extends State<ContactsPage> {
-  final List<Map<String, String>> _allContacts = [
-    {'name': 'Virginia Angel'},
-    {'name': 'John Doe'},
-    {'name': 'Jane Smith'},
-    {'name': 'Albert Einstein'},
-  ];
+  late Future<List<Contact>> _contactsFuture;
 
-  List<Map<String, String>> _filteredContacts = [];
-  final TextEditingController _searchController = TextEditingController();
+  void _insertDummyContact() async {
+    final dbHelper = DatabaseHelper();
+    final existingContacts = await dbHelper.getAllContacts();
+
+    // Hanya insert jika kosong agar tidak dobel terus
+    if (existingContacts.isEmpty) {
+      await dbHelper.insertContact(
+        Contact(
+          name: 'Tes Dummy',
+          phone: '08123456789',
+          email: 'dummy@mail.com',
+          label: 'Personal',
+        ),
+      );
+      setState(() {
+        _loadContacts(); // refresh daftar
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _filteredContacts = _allContacts; // default
-    _searchController.addListener(_filterContacts);
+    _loadContacts();
+    _insertDummyContact(); // ← panggil ini
   }
 
-  void _filterContacts() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredContacts = _allContacts.where((contact) {
-        final name = contact['name']?.toLowerCase() ?? '';
-        return name.contains(query);
-      }).toList();
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _loadContacts() {
+    _contactsFuture = DatabaseHelper().getAllContacts();
   }
 
   @override
@@ -109,7 +108,6 @@ class _ContactsPageState extends State<ContactsPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
-              controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search contacts',
                 prefixIcon: Icon(Icons.search, color: Colors.deepPurple),
@@ -125,46 +123,49 @@ class _ContactsPageState extends State<ContactsPage> {
           ),
           const SizedBox(height: 20),
           Expanded(
-            child: _filteredContacts.isEmpty
-                ? const Center(child: Text('No contacts found.'))
-                : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _filteredContacts.length,
-              itemBuilder: (context, index) {
-                return ContactCard(contact: _filteredContacts[index]);
+            child: FutureBuilder<List<Contact>>(
+              future: _contactsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return const Center(child: Text('Gagal memuat kontak'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('Belum ada kontak'));
+                } else {
+                  final contacts = snapshot.data!;
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: contacts.length,
+                    itemBuilder: (context, index) {
+                      return ContactCard(contact: contacts[index]);
+                    },
+                  );
+                }
               },
             ),
           ),
         ],
       ),
-      floatingActionButton: GestureDetector(
-        onTap: () {
-          Navigator.push(
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.deepPurple,
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddContactPage()),
           );
+          setState(() {
+            _loadContacts();
+          });
         },
-        child: Container(
-          width: 60,
-          height: 60,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 }
 
-
 class ContactCard extends StatelessWidget {
-  final Map<String, String> contact;
+  final Contact contact;
   const ContactCard({super.key, required this.contact});
 
   @override
@@ -194,7 +195,7 @@ class ContactCard extends StatelessWidget {
               ),
               const SizedBox(width: 20),
               Text(
-                contact['name'] ?? 'Unknown',
+                contact.name,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
