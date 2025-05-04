@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../db/database_helper.dart';
+import '../models/contact_model.dart';
+
 
 class AddContactPage extends StatefulWidget {
   const AddContactPage({super.key});
@@ -17,26 +20,58 @@ class _AddContactPageState extends State<AddContactPage> {
 
   final List<String> labelOptions = ['Personal', 'Work'];
 
-  void saveContact() {
-    String name = nameController.text.trim();
-    String phone = phoneController.text.trim();
-    String email = emailController.text.trim();
+  void saveContact() async {
+  String name = nameController.text.trim();
+  String phone = phoneController.text.trim();
+  String email = emailController.text.trim();
 
-    if (name.isEmpty || phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in Name and Phone')),
-      );
-      return;
-    }
+  if (name.isEmpty || phone.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please fill in Name and Phone'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  Contact newContact = Contact(
+    name: name,
+    phone: phone,
+    email: email.isEmpty ? null : email,
+    label: selectedLabel ?? 'Personal',
+  );
+
+  // Tampilkan loading
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    await DatabaseHelper().insertContact(newContact);
+    Navigator.pop(context); // tutup loading
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Saved: $name, $phone, $email, Label: ${selectedLabel ?? "-"}'),
+      const SnackBar(
+        content: Text('Contact saved successfully'),
+        backgroundColor: Colors.green,
       ),
     );
 
-    Navigator.pop(context);
+    Navigator.pop(context); // kembali ke halaman sebelumnya
+  } catch (e) {
+    Navigator.pop(context); // tutup loading
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to save contact: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
