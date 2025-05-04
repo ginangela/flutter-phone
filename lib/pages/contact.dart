@@ -13,23 +13,57 @@ class ContactsApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: 'Poppins',
+      ),
       home: const ContactsPage(),
     );
   }
 }
 
-class ContactsPage extends StatelessWidget {
+class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, String>> contacts = [
-      {'name': 'Virginia Angel'},
-      {'name': 'John Doe'},
-      {'name': 'Jane Smith'},
-      {'name': 'Albert Einstein'},
-    ];
+  State<ContactsPage> createState() => _ContactsPageState();
+}
 
+class _ContactsPageState extends State<ContactsPage> {
+  final List<Map<String, String>> _allContacts = [
+    {'name': 'Virginia Angel'},
+    {'name': 'John Doe'},
+    {'name': 'Jane Smith'},
+    {'name': 'Albert Einstein'},
+  ];
+
+  List<Map<String, String>> _filteredContacts = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredContacts = _allContacts; // default
+    _searchController.addListener(_filterContacts);
+  }
+
+  void _filterContacts() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredContacts = _allContacts.where((contact) {
+        final name = contact['name']?.toLowerCase() ?? '';
+        return name.contains(query);
+      }).toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFEDEDED),
       body: Column(
@@ -75,6 +109,7 @@ class ContactsPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
+              controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search contacts',
                 prefixIcon: Icon(Icons.search, color: Colors.deepPurple),
@@ -90,11 +125,13 @@ class ContactsPage extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Expanded(
-            child: ListView.builder(
+            child: _filteredContacts.isEmpty
+                ? const Center(child: Text('No contacts found.'))
+                : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: contacts.length,
+              itemCount: _filteredContacts.length,
               itemBuilder: (context, index) {
-                return ContactCard(contact: contacts[index]);
+                return ContactCard(contact: _filteredContacts[index]);
               },
             ),
           ),
@@ -124,6 +161,7 @@ class ContactsPage extends StatelessWidget {
     );
   }
 }
+
 
 class ContactCard extends StatelessWidget {
   final Map<String, String> contact;

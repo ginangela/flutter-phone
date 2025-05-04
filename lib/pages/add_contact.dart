@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'detail_contact.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AddContactPage extends StatefulWidget {
   const AddContactPage({super.key});
@@ -14,8 +18,27 @@ class _AddContactPageState extends State<AddContactPage> {
 
   bool showMore = false;
   String? selectedLabel;
+  File? _profileImage;
 
   final List<String> labelOptions = ['Personal', 'Work'];
+
+  Future<void> _pickImage() async {
+    var status = await Permission.photos.request(); // atau Permission.storage untuk Android
+
+    if (status.isGranted) {
+      final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        setState(() {
+          _profileImage = File(pickedFile.path);
+        });
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Permission denied')),
+      );
+    }
+  }
+
 
   void saveContact() {
     String name = nameController.text.trim();
@@ -29,13 +52,18 @@ class _AddContactPageState extends State<AddContactPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Saved: $name, $phone, $email, Label: ${selectedLabel ?? "-"}'),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ContactDetailPage(
+          name: name,
+          phone: phone,
+          email: email,
+          label: selectedLabel,
+          profileImage: _profileImage,
+        ),
       ),
     );
-
-    Navigator.pop(context);
   }
 
   @override
@@ -80,22 +108,28 @@ class _AddContactPageState extends State<AddContactPage> {
           Stack(
             alignment: Alignment.bottomRight,
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 50,
                 backgroundColor: Colors.black26,
-                child: Icon(Icons.person, size: 60, color: Colors.white),
+                backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                child: _profileImage == null
+                    ? const Icon(Icons.person, size: 60, color: Colors.white)
+                    : null,
               ),
-              Container(
-                margin: const EdgeInsets.only(right: 4, bottom: 4),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  margin: const EdgeInsets.only(right: 4, bottom: 4),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
+                    ),
                   ),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.add, color: Colors.white, size: 16),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.add, color: Colors.white, size: 16),
+                  ),
                 ),
               ),
             ],
