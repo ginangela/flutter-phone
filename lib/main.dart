@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'contact.dart';
-import 'add_contact.dart';
-import 'edit_contact.dart';
+import 'pages/contact.dart';
+import 'pages/add_contact.dart';
+import 'pages/edit_contact.dart';
 
 void main() {
   runApp(const MyApp());
