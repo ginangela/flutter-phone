@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // Untuk platform selain web
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // Untuk web
-import 'package:flutter/foundation.dart'; // Tambahkan ini
+import 'package:flutter/foundation.dart';
 import 'pages/contact.dart';
 import 'pages/add_contact.dart';
 import 'pages/edit_contact.dart';
 import 'models/contact_model.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();  // Pastikan binding diinisialisasi terlebih dahulu
+  WidgetsFlutterBinding.ensureInitialized();
 
   if (kIsWeb) {
-    databaseFactory = databaseFactoryFfiWeb; // Gunakan untuk web
+    databaseFactory = databaseFactoryFfiWeb;
   } else {
     sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi; // Untuk platform selain web
+    databaseFactory = databaseFactoryFfi;
   }
 
   runApp(const MyApp());
@@ -28,7 +28,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Contact App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        fontFamily: 'Poppins',
+        primarySwatch: Colors.blue,
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(fontWeight: FontWeight.w600),
+          bodyMedium: TextStyle(fontWeight: FontWeight.w400),
+        ),
+      ),
       initialRoute: '/',
       routes: {
         '/': (context) => const ContactsPage(),

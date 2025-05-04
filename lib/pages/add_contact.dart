@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../db/database_helper.dart';
 import '../models/contact_model.dart';
 
-
 class AddContactPage extends StatefulWidget {
   const AddContactPage({super.key});
 
@@ -21,57 +20,56 @@ class _AddContactPageState extends State<AddContactPage> {
   final List<String> labelOptions = ['Personal', 'Work'];
 
   void saveContact() async {
-  String name = nameController.text.trim();
-  String phone = phoneController.text.trim();
-  String email = emailController.text.trim();
+    String name = nameController.text.trim();
+    String phone = phoneController.text.trim();
+    String email = emailController.text.trim();
 
-  if (name.isEmpty || phone.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please fill in Name and Phone'),
-        backgroundColor: Colors.red,
-      ),
+    if (name.isEmpty || phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in Name and Phone'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    Contact newContact = Contact(
+      name: name,
+      phone: phone,
+      email: email.isEmpty ? null : email,
+      label: selectedLabel ?? 'Personal',
     );
-    return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await DatabaseHelper().insertContact(newContact);
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Contact saved successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save contact: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-
-  Contact newContact = Contact(
-    name: name,
-    phone: phone,
-    email: email.isEmpty ? null : email,
-    label: selectedLabel ?? 'Personal',
-  );
-
-  // Tampilkan loading
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => const Center(child: CircularProgressIndicator()),
-  );
-
-  try {
-    await DatabaseHelper().insertContact(newContact);
-    Navigator.pop(context); // tutup loading
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Contact saved successfully'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    Navigator.pop(context); // kembali ke halaman sebelumnya
-  } catch (e) {
-    Navigator.pop(context); // tutup loading
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Failed to save contact: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +170,7 @@ class _AddContactPageState extends State<AddContactPage> {
                         value: selectedLabel,
                         hint: Row(
                           children: const [
-                            Icon(Icons.label_outline, color: Colors.deepPurple),
+                            Icon(Icons.label_outline, color: Color(0xFF6F7BF7)),
                             SizedBox(width: 8),
                             Text('Labels'),
                           ],
@@ -205,54 +203,32 @@ class _AddContactPageState extends State<AddContactPage> {
             },
             icon: Icon(
               showMore ? Icons.expand_less : Icons.expand_more,
-              color: Colors.deepPurple,
+              color: Color(0xFF6F7BF7),
             ),
             label: Text(
               showMore ? "Show less" : "Show more",
-              style: const TextStyle(color: Colors.deepPurple),
+              style: const TextStyle(color: Color(0xFF6F7BF7)),
             ),
           ),
           const Spacer(),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: HoverButton(
+                    label: 'Save',
                     onPressed: saveContact,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        side: const BorderSide(color: Colors.deepPurple),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(color: Colors.deepPurple),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 20),
                 Expanded(
-                  child: ElevatedButton(
+                  child: HoverButton(
+                    label: 'Cancel',
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        side: const BorderSide(color: Colors.deepPurple),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.deepPurple),
-                    ),
                   ),
                 ),
               ],
@@ -284,7 +260,7 @@ class CustomInputField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.deepPurple),
+        prefixIcon: Icon(icon, color: Color(0xFF6F7BF7)),
         hintText: hint,
         filled: true,
         fillColor: Colors.white,
@@ -292,6 +268,65 @@ class CustomInputField extends StatelessWidget {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}
+
+class HoverButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onPressed;
+
+  const HoverButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  State<HoverButton> createState() => _HoverButtonState();
+}
+
+class _HoverButtonState extends State<HoverButton> {
+  bool isHovered = false;
+
+  final Color targetTextColor = const Color(0xFF6F7BF7); // Warna font hover
+  final Color defaultTextColor = Colors.deepPurple; // Warna font default
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+          width: 140, //
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: isHovered ? Colors.grey.shade300 : Colors.black12,
+                blurRadius: isHovered ? 10 : 4,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: targetTextColor,
+              ),
+            ),
+          ),
         ),
       ),
     );
