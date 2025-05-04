@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_phone/add_contact.dart';
+import 'package:flutter_phone/pages/add_contact.dart';
 
 void main() {
   runApp(const ContactsApp());
