@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_phone/pages/add_contact.dart';
 import 'package:flutter_phone/pages/edit_contact.dart';
+import 'package:flutter_phone/pages/detail_contact.dart';
 import 'package:flutter_phone/db/database_helper.dart';
 import 'package:flutter_phone/models/contact_model.dart';
+
+void main() {
+  runApp(const ContactsApp());
+}
+
+class ContactsApp extends StatelessWidget {
+  const ContactsApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const ContactsPage(),
+    );
+  }
+}
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -36,7 +53,6 @@ class _ContactsPageState extends State<ContactsPage> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_filterContacts);
     _loadContacts();
     _insertDummyContact();
   }
@@ -49,20 +65,17 @@ class _ContactsPageState extends State<ContactsPage> {
     });
   }
 
-  void _filterContacts() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredContacts = _allContacts.where((contact) {
-        return contact.name.toLowerCase().contains(query) ||
-            contact.phone.toLowerCase().contains(query);
-      }).toList();
-    });
-  }
+  void _searchContacts(String query) {
+    final filtered = _allContacts.where((contact) {
+      final nameLower = contact.name.toLowerCase();
+      final phoneLower = contact.phone.toLowerCase();
+      final searchLower = query.toLowerCase();
+      return nameLower.contains(searchLower) || phoneLower.contains(searchLower);
+    }).toList();
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+    setState(() {
+      _filteredContacts = filtered;
+    });
   }
 
   @override
@@ -113,9 +126,10 @@ class _ContactsPageState extends State<ContactsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
               controller: _searchController,
+              onChanged: _searchContacts,
               decoration: InputDecoration(
                 hintText: 'Search contacts',
-                prefixIcon: Icon(Icons.search, color: Color(0xFF6F7BF7)),
+                prefixIcon: Icon(Icons.search, color: Colors.deepPurple),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
@@ -129,99 +143,67 @@ class _ContactsPageState extends State<ContactsPage> {
           const SizedBox(height: 20),
           Expanded(
             child: _filteredContacts.isEmpty
-                ? const Center(child: Text('No contacts found'))
+                ? const Center(child: Text('Kontak tidak ditemukan'))
                 : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: _filteredContacts.length,
               itemBuilder: (context, index) {
-                return ContactCard(contact: _filteredContacts[index]);
+                final contact = _filteredContacts[index];
+                return GestureDetector(
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ContactDetailPage(
+                          id: contact.id,
+                          name: contact.name,
+                          phone: contact.phone,
+                          email: contact.email ?? 'email',
+                          label: contact.label,
+                        ),
+                      ),
+                    );
+
+                    if (result == true) {
+                      _loadContacts(); // Reload setelah edit
+                    }
+                  },
+                  child: ContactCard(contact: contact),
+                );
               },
             ),
           ),
         ],
       ),
-      floatingActionButton: GestureDetector(
-        onTap: () async {
-          await Navigator.push(
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.deepPurple,
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddContactPage()),
           );
-          _loadContacts();
+
+          if (result == true) {
+            _loadContacts(); // Reload setelah tambah kontak
+          }
         },
-        child: Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF9BF8F4), Color(0xFF6F7BF7)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                offset: const Offset(0, 4),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Icon(Icons.add, size: 40, color: Colors.white),
-          ),
-        ),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 }
 
-class ContactCard extends StatefulWidget {
+class ContactCard extends StatelessWidget {
   final Contact contact;
   const ContactCard({super.key, required this.contact});
 
   @override
-  State<ContactCard> createState() => _ContactCardState();
-}
-
-class _ContactCardState extends State<ContactCard> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isHovered = true),
-      onTapUp: (_) => setState(() => _isHovered = false),
-      onTapCancel: () => setState(() => _isHovered = false),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EditContactPage(contact: widget.contact),
-          ),
-        );
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: _isHovered
-              ? [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ]
-              : [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 3,
+      child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
@@ -232,19 +214,12 @@ class _ContactCardState extends State<ContactCard> {
               ),
             ),
             const SizedBox(width: 20),
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color(0xFF6F7BF7),Color(0xFF9BF8F4)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-              child: Text(
-                widget.contact.name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white, // wajib untuk ShaderMask
-                ),
+            Text(
+              contact.name,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue.shade600,
               ),
             ),
           ],

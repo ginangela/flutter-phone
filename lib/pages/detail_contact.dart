@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:flutter_phone/pages/edit_contact.dart';
+import 'package:flutter_phone/db/database_helper.dart';
+import 'package:flutter_phone/models/contact_model.dart';
 
-class ContactDetailPage extends StatelessWidget {
+class ContactDetailPage extends StatefulWidget {
+  final int? id;
   final String name;
   final String phone;
   final String email;
@@ -10,6 +14,7 @@ class ContactDetailPage extends StatelessWidget {
 
   const ContactDetailPage({
     super.key,
+    required this.id,
     required this.name,
     required this.phone,
     required this.email,
@@ -18,7 +23,35 @@ class ContactDetailPage extends StatelessWidget {
   });
 
   @override
+  State<ContactDetailPage> createState() => _ContactDetailPageState();
+}
+
+class _ContactDetailPageState extends State<ContactDetailPage> {
+  Contact? _contact;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContact();
+  }
+
+  Future<void> _loadContact() async {
+    if (widget.id != null) {
+      final contact = await DatabaseHelper().getContactById(widget.id!);
+      setState(() {
+        _contact = contact;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_contact == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF1F1F1),
       body: Column(
@@ -42,30 +75,36 @@ class ContactDetailPage extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(context, true),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                      Text(
+                        _contact!.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 8),
-                      if (label != null)
+                      if (_contact!.label != null)
                         ContactLabel(
-                          label: label!,
-                          color: label == "Work" ? const Color(0xFF69F0AE) : const Color(0xFF4FC3F7),
+                          label: _contact!.label!,
+                          color: _contact!.label == "Work"
+                              ? const Color(0xFF69F0AE)
+                              : const Color(0xFF4FC3F7),
                         ),
                     ],
                   ),
                 ),
                 CircleAvatar(
                   radius: 35,
-                  backgroundImage:
-                  profileImage != null ? FileImage(profileImage!) : null,
-                  child: profileImage == null
+                  backgroundImage: widget.profileImage != null ? FileImage(widget.profileImage!) : null,
+                  child: widget.profileImage == null
                       ? const Icon(Icons.person, color: Colors.white, size: 30)
                       : null,
                 ),
@@ -74,9 +113,9 @@ class ContactDetailPage extends StatelessWidget {
           ),
 
           const SizedBox(height: 30),
-          ContactInfoCard(icon: Icons.phone, label: "Phone", value: phone, trailing: Icons.message),
+          ContactInfoCard(icon: Icons.phone, label: "Phone", value: _contact!.phone, trailing: Icons.message),
           const SizedBox(height: 20),
-          ContactInfoCard(icon: Icons.email, label: "Email", value: email),
+          ContactInfoCard(icon: Icons.email, label: "Email", value: _contact!.email ?? '-'),
           const Spacer(),
 
           Container(
@@ -85,14 +124,29 @@ class ContactDetailPage extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(40),
-              boxShadow: [
-                BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-              ],
+              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                const Icon(Icons.edit, color: Color(0xFF7E57C2)),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Color(0xFF7E57C2)),
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditContactPage(contact: _contact!),
+                      ),
+                    );
+                    if (result != null) {
+                      setState(() {
+                        _contact = result; // Menyimpan data yang diperbarui
+                      });
+                      _loadContact(); // Refresh data jika diedit
+                    }
+                  },
+                ),
+
                 const Icon(Icons.star_border, color: Colors.amber),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.redAccent),
@@ -106,16 +160,16 @@ class ContactDetailPage extends StatelessWidget {
                           actions: [
                             TextButton(
                               child: const Text("Tidak"),
-                              onPressed: () {
-                                Navigator.of(context).pop(); // tutup dialog
-                              },
+                              onPressed: () => Navigator.of(context).pop(),
                             ),
                             TextButton(
                               child: const Text("Ya"),
-                              onPressed: () {
-                                // TODO: Tambahkan logika penghapusan jika perlu
-                                Navigator.of(context).pop(); // tutup dialog
-                                Navigator.of(context).pop(); // kembali ke halaman sebelumnya
+                              onPressed: () async {
+                                if (_contact!.id != null) {
+                                  await DatabaseHelper().deleteContact(_contact!.id!);
+                                }
+                                Navigator.of(context).pop();
+                                Navigator.of(context).pop(true); // kembali ke halaman utama
                               },
                             ),
                           ],
@@ -126,7 +180,7 @@ class ContactDetailPage extends StatelessWidget {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -143,10 +197,7 @@ class ContactLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
       child: Text(label, style: const TextStyle(color: Colors.black87)),
     );
   }
@@ -185,7 +236,10 @@ class ContactInfoCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-                Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
               ],
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../db/database_helper.dart';
 import '../models/contact_model.dart';
+import 'package:flutter_phone/pages/detail_contact.dart';
 
 class AddContactPage extends StatefulWidget {
   const AddContactPage({super.key});
@@ -16,7 +17,6 @@ class _AddContactPageState extends State<AddContactPage> {
 
   bool showMore = false;
   String? selectedLabel;
-
   final List<String> labelOptions = ['Personal', 'Work'];
 
   void saveContact() async {
@@ -27,7 +27,7 @@ class _AddContactPageState extends State<AddContactPage> {
     if (name.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill in Name and Phone'),
+          content: Text('Harap isi Nama dan Telepon'),
           backgroundColor: Colors.red,
         ),
       );
@@ -41,6 +41,7 @@ class _AddContactPageState extends State<AddContactPage> {
       label: selectedLabel ?? 'Personal',
     );
 
+    // Tampilkan loading spinner
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -48,23 +49,39 @@ class _AddContactPageState extends State<AddContactPage> {
     );
 
     try {
-      await DatabaseHelper().insertContact(newContact);
-      Navigator.pop(context);
+      // Simpan kontak dan ambil ID-nya
+      int insertedId = await DatabaseHelper().insertContact(newContact);
+      newContact.id = insertedId;
+
+      Navigator.pop(context); // Tutup spinner
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Contact saved successfully'),
+          content: Text('Kontak berhasil disimpan'),
           backgroundColor: Colors.green,
         ),
       );
 
-      Navigator.pop(context);
+      // Arahkan ke halaman detail kontak
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => ContactDetailPage(
+            id: newContact.id!,
+            name: newContact.name,
+            phone: newContact.phone,
+            email: newContact.email ?? '',
+            label: newContact.label
+          ),
+        ),
+      );
     } catch (e) {
-      Navigator.pop(context);
+      Navigator.pop(context); // Tutup spinner jika error
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to save contact: $e'),
+          content: Text('Gagal menyimpan kontak: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -78,7 +95,12 @@ class _AddContactPageState extends State<AddContactPage> {
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 30),
+            padding: const EdgeInsets.only(
+              top: 60,
+              left: 20,
+              right: 20,
+              bottom: 30,
+            ),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
@@ -100,7 +122,7 @@ class _AddContactPageState extends State<AddContactPage> {
             child: const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'New Contact',
+                'Kontak Baru',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -140,13 +162,13 @@ class _AddContactPageState extends State<AddContactPage> {
               children: [
                 CustomInputField(
                   icon: Icons.person_outline,
-                  hint: 'Name',
+                  hint: 'Nama',
                   controller: nameController,
                 ),
                 const SizedBox(height: 16),
                 CustomInputField(
                   icon: Icons.phone_outlined,
-                  hint: 'Phone',
+                  hint: 'Telepon',
                   controller: phoneController,
                   keyboardType: TextInputType.phone,
                 ),
@@ -170,13 +192,14 @@ class _AddContactPageState extends State<AddContactPage> {
                         value: selectedLabel,
                         hint: Row(
                           children: const [
-                            Icon(Icons.label_outline, color: Color(0xFF6F7BF7)),
+                            Icon(Icons.label_outline, color: Colors.deepPurple),
                             SizedBox(width: 8),
-                            Text('Labels'),
+                            Text('Label'),
                           ],
                         ),
                         isExpanded: true,
-                        items: labelOptions.map((label) {
+                        items:
+                        labelOptions.map((label) {
                           return DropdownMenuItem<String>(
                             value: label,
                             child: Text(label),
@@ -203,32 +226,54 @@ class _AddContactPageState extends State<AddContactPage> {
             },
             icon: Icon(
               showMore ? Icons.expand_less : Icons.expand_more,
-              color: Color(0xFF6F7BF7),
+              color: Colors.deepPurple,
             ),
             label: Text(
-              showMore ? "Show less" : "Show more",
-              style: const TextStyle(color: Color(0xFF6F7BF7)),
+              showMore ? "Tampilkan lebih sedikit" : "Tampilkan lebih banyak",
+              style: const TextStyle(color: Colors.deepPurple),
             ),
           ),
           const Spacer(),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: HoverButton(
-                    label: 'Save',
+                  child: ElevatedButton(
                     onPressed: saveContact,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        side: const BorderSide(color: Colors.deepPurple),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text(
+                      'Simpan',
+                      style: TextStyle(color: Colors.deepPurple),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 20),
                 Expanded(
-                  child: HoverButton(
-                    label: 'Cancel',
+                  child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
                     },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        side: const BorderSide(color: Colors.deepPurple),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text(
+                      'Batal',
+                      style: TextStyle(color: Colors.deepPurple),
+                    ),
                   ),
                 ),
               ],
@@ -260,7 +305,7 @@ class CustomInputField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Color(0xFF6F7BF7)),
+        prefixIcon: Icon(icon, color: Colors.deepPurple),
         hintText: hint,
         filled: true,
         fillColor: Colors.white,
@@ -268,65 +313,6 @@ class CustomInputField extends StatelessWidget {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-}
-
-class HoverButton extends StatefulWidget {
-  final String label;
-  final VoidCallback onPressed;
-
-  const HoverButton({
-    super.key,
-    required this.label,
-    required this.onPressed,
-  });
-
-  @override
-  State<HoverButton> createState() => _HoverButtonState();
-}
-
-class _HoverButtonState extends State<HoverButton> {
-  bool isHovered = false;
-
-  final Color targetTextColor = const Color(0xFF6F7BF7); // Warna font hover
-  final Color defaultTextColor = Colors.deepPurple; // Warna font default
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => isHovered = true),
-      onExit: (_) => setState(() => isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOut,
-          width: 140, //
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: isHovered ? Colors.grey.shade300 : Colors.black12,
-                blurRadius: isHovered ? 10 : 4,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: targetTextColor,
-              ),
-            ),
-          ),
         ),
       ),
     );

@@ -27,7 +27,8 @@ class DatabaseHelper {
             name TEXT,
             phone TEXT,
             email TEXT,
-            label TEXT
+            label TEXT,
+            profileImage TEXT
           )
         ''');
       },
@@ -58,5 +59,20 @@ class DatabaseHelper {
   Future<int> deleteContact(int id) async {
     final db = await database;
     return await db.delete('contacts', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<Contact?> getContactById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.query(
+      'contacts',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (result.isNotEmpty) {
+      return Contact.fromMap(result.first);
+    } else {
+      return null;
+    }
   }
 }
