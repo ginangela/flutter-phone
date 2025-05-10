@@ -22,6 +22,14 @@ class _AddContactPageState extends State<AddContactPage> {
   void saveContact() async {
     String name = nameController.text.trim();
     String phone = phoneController.text.trim();
+
+    // Format ulang nomor telepon
+    if (phone.startsWith('0')) {
+      phone = phone.replaceFirst('0', '+62');
+    } else if (!phone.startsWith('+62')) {
+      phone = '+62$phone';
+    }
+
     String email = emailController.text.trim();
 
     if (name.isEmpty || phone.isEmpty) {

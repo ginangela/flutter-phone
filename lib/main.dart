@@ -8,23 +8,19 @@ import 'pages/edit_contact.dart';
 import 'models/contact_model.dart';
 import 'package:path/path.dart';
 
-
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (kIsWeb) {
     databaseFactory = databaseFactoryFfiWeb;
-  } else {
+  } else if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) {
+    // Hanya untuk desktop
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
-
   }
 
   runApp(const MyApp());
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
