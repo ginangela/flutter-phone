@@ -145,33 +145,33 @@ class _ContactsPageState extends State<ContactsPage> {
             child: _filteredContacts.isEmpty
                 ? const Center(child: Text('Kontak tidak ditemukan'))
                 : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _filteredContacts.length,
-              itemBuilder: (context, index) {
-                final contact = _filteredContacts[index];
-                return GestureDetector(
-                  onTap: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ContactDetailPage(
-                          id: contact.id,
-                          name: contact.name,
-                          phone: contact.phone,
-                          email: contact.email ?? 'email',
-                          label: contact.label,
-                        ),
-                      ),
-                    );
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: _filteredContacts.length,
+                    itemBuilder: (context, index) {
+                      final contact = _filteredContacts[index];
+                      return GestureDetector(
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ContactDetailPage(
+                                id: contact.id,
+                                name: contact.name,
+                                phone: contact.phone,
+                                email: contact.email ?? 'email',
+                                label: contact.label,
+                              ),
+                            ),
+                          );
 
-                    if (result == true) {
-                      _loadContacts(); // Reload setelah edit
-                    }
-                  },
-                  child: ContactCard(contact: contact),
-                );
-              },
-            ),
+                          if (result == true) {
+                            _loadContacts(); // Reload setelah edit
+                          }
+                        },
+                        child: ContactCard(contact: contact),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

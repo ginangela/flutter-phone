@@ -22,6 +22,14 @@ class _AddContactPageState extends State<AddContactPage> {
   void saveContact() async {
     String name = nameController.text.trim();
     String phone = phoneController.text.trim();
+
+    // Format ulang nomor telepon
+    if (phone.startsWith('0')) {
+      phone = phone.replaceFirst('0', '+62');
+    } else if (!phone.startsWith('+62')) {
+      phone = '+62$phone';
+    }
+
     String email = emailController.text.trim();
 
     if (name.isEmpty || phone.isEmpty) {
@@ -49,11 +57,10 @@ class _AddContactPageState extends State<AddContactPage> {
     );
 
     try {
-      // Simpan kontak dan ambil ID-nya
       int insertedId = await DatabaseHelper().insertContact(newContact);
       newContact.id = insertedId;
 
-      Navigator.pop(context); // Tutup spinner
+      Navigator.pop(context); // tutup spinner
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -62,23 +69,23 @@ class _AddContactPageState extends State<AddContactPage> {
         ),
       );
 
-      // Arahkan ke halaman detail kontak
-      Navigator.pushReplacement(
+      Navigator.pop(context, true); // beri sinyal reload
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder:
               (context) => ContactDetailPage(
-            id: newContact.id!,
-            name: newContact.name,
-            phone: newContact.phone,
-            email: newContact.email ?? '',
-            label: newContact.label
-          ),
+                id: newContact.id!,
+                name: newContact.name,
+                phone: newContact.phone,
+                email: newContact.email ?? '',
+                label: newContact.label,
+                profileImage: newContact.profileImage,
+              ),
         ),
       );
     } catch (e) {
-      Navigator.pop(context); // Tutup spinner jika error
-
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal menyimpan kontak: $e'),
@@ -92,194 +99,234 @@ class _AddContactPageState extends State<AddContactPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFEDEDED),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.only(
-              top: 60,
-              left: 20,
-              right: 20,
-              bottom: 30,
-            ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(25),
-                bottomRight: Radius.circular(25),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 6,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Kontak Baru',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              const CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.black26,
-                child: Icon(Icons.person, size: 60, color: Colors.white),
-              ),
-              Container(
-                margin: const EdgeInsets.only(right: 4, bottom: 4),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
-                  ),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.add, color: Colors.white, size: 16),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 30),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
-                CustomInputField(
-                  icon: Icons.person_outline,
-                  hint: 'Nama',
-                  controller: nameController,
-                ),
-                const SizedBox(height: 16),
-                CustomInputField(
-                  icon: Icons.phone_outlined,
-                  hint: 'Telepon',
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                ),
-                if (showMore) ...[
-                  const SizedBox(height: 16),
-                  CustomInputField(
-                    icon: Icons.email_outlined,
-                    hint: 'Email',
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedLabel,
-                        hint: Row(
-                          children: const [
-                            Icon(Icons.label_outline, color: Colors.deepPurple),
-                            SizedBox(width: 8),
-                            Text('Label'),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.only(
+                          top: 30,
+                          left: 20,
+                          right: 20,
+                          bottom: 30,
+                        ),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(25),
+                            bottomRight: Radius.circular(25),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 6,
+                              offset: Offset(0, 4),
+                            ),
                           ],
                         ),
-                        isExpanded: true,
-                        items:
-                        labelOptions.map((label) {
-                          return DropdownMenuItem<String>(
-                            value: label,
-                            child: Text(label),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
+                        child: const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Kontak Baru',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          const CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.black26,
+                            child: Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Container(
+                            margin: const EdgeInsets.only(right: 4, bottom: 4),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [Color(0xFFB2EBF2), Color(0xFF7E57C2)],
+                              ),
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            CustomInputField(
+                              icon: Icons.person_outline,
+                              hint: 'Nama',
+                              controller: nameController,
+                            ),
+                            const SizedBox(height: 16),
+                            CustomInputField(
+                              icon: Icons.phone_outlined,
+                              hint: 'Telepon',
+                              controller: phoneController,
+                              keyboardType: TextInputType.phone,
+                            ),
+                            if (showMore) ...[
+                              const SizedBox(height: 16),
+                              CustomInputField(
+                                icon: Icons.email_outlined,
+                                hint: 'Email',
+                                controller: emailController,
+                                keyboardType: TextInputType.emailAddress,
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: selectedLabel,
+                                    hint: Row(
+                                      children: const [
+                                        Icon(
+                                          Icons.label_outline,
+                                          color: Colors.deepPurple,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text('Label'),
+                                      ],
+                                    ),
+                                    isExpanded: true,
+                                    items:
+                                        labelOptions.map((label) {
+                                          return DropdownMenuItem<String>(
+                                            value: label,
+                                            child: Text(label),
+                                          );
+                                        }).toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        selectedLabel = value;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextButton.icon(
+                        onPressed: () {
                           setState(() {
-                            selectedLabel = value;
+                            showMore = !showMore;
                           });
                         },
+                        icon: Icon(
+                          showMore ? Icons.expand_less : Icons.expand_more,
+                          color: Colors.deepPurple,
+                        ),
+                        label: Text(
+                          showMore
+                              ? "Tampilkan lebih sedikit"
+                              : "Tampilkan lebih banyak",
+                          style: const TextStyle(color: Colors.deepPurple),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          TextButton.icon(
-            onPressed: () {
-              setState(() {
-                showMore = !showMore;
-              });
-            },
-            icon: Icon(
-              showMore ? Icons.expand_less : Icons.expand_more,
-              color: Colors.deepPurple,
-            ),
-            label: Text(
-              showMore ? "Tampilkan lebih sedikit" : "Tampilkan lebih banyak",
-              style: const TextStyle(color: Colors.deepPurple),
-            ),
-          ),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: saveContact,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        side: const BorderSide(color: Colors.deepPurple),
+                      const Spacer(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 30,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: saveContact,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    side: const BorderSide(
+                                      color: Colors.deepPurple,
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Simpan',
+                                  style: TextStyle(color: Colors.deepPurple),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    side: const BorderSide(
+                                      color: Colors.deepPurple,
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Batal',
+                                  style: TextStyle(color: Colors.deepPurple),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Simpan',
-                      style: TextStyle(color: Colors.deepPurple),
-                    ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        side: const BorderSide(color: Colors.deepPurple),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Batal',
-                      style: TextStyle(color: Colors.deepPurple),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

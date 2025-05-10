@@ -8,23 +8,19 @@ import 'pages/edit_contact.dart';
 import 'models/contact_model.dart';
 import 'package:path/path.dart';
 
-
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (kIsWeb) {
     databaseFactory = databaseFactoryFfiWeb;
-  } else {
+  } else if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) {
+    // Hanya untuk desktop
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
-
   }
 
   runApp(const MyApp());
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -34,14 +30,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Contact App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Poppins',
-        primarySwatch: Colors.blue,
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(fontWeight: FontWeight.w600),
-          bodyMedium: TextStyle(fontWeight: FontWeight.w400),
-        ),
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/',
       routes: {
         '/': (context) => const ContactsPage(),

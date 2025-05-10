@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_phone/pages/edit_contact.dart';
 import 'package:flutter_phone/db/database_helper.dart';
 import 'package:flutter_phone/models/contact_model.dart';
+import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ContactDetailPage extends StatefulWidget {
   final int? id;
@@ -41,6 +43,22 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
       setState(() {
         _contact = contact;
       });
+    }
+  }
+
+  Future<void> _makeDirectCall(String phoneNumber) async {
+    final status = await Permission.phone.status;
+
+    if (!status.isGranted) {
+      await Permission.phone.request();
+    }
+
+    if (await Permission.phone.isGranted) {
+      await FlutterPhoneDirectCaller.callNumber(phoneNumber);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Izin panggilan tidak diberikan")),
+      );
     }
   }
 
@@ -103,7 +121,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                 ),
                 CircleAvatar(
                   radius: 35,
-                  backgroundImage: widget.profileImage != null ? FileImage(widget.profileImage!) : null,
+                  backgroundImage:
+                      widget.profileImage != null ? FileImage(widget.profileImage!) : null,
                   child: widget.profileImage == null
                       ? const Icon(Icons.person, color: Colors.white, size: 30)
                       : null,
@@ -113,18 +132,30 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
           ),
 
           const SizedBox(height: 30),
-          ContactInfoCard(icon: Icons.phone, label: "Phone", value: _contact!.phone, trailing: Icons.message),
+          ContactInfoCard(
+            icon: Icons.phone,
+            label: "Phone",
+            value: _contact!.phone,
+            trailing: Icons.message,
+          ),
           const SizedBox(height: 20),
-          ContactInfoCard(icon: Icons.email, label: "Email", value: _contact!.email ?? '-'),
+          ContactInfoCard(
+            icon: Icons.email,
+            label: "Email",
+            value: _contact!.email ?? '-',
+          ),
           const Spacer(),
 
+          // Action Buttons
           Container(
             margin: const EdgeInsets.all(20),
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(40),
-              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -140,14 +171,16 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                     );
                     if (result != null) {
                       setState(() {
-                        _contact = result; // Menyimpan data yang diperbarui
+                        _contact = result;
                       });
-                      _loadContact(); // Refresh data jika diedit
+                      _loadContact();
                     }
                   },
                 ),
-
-                const Icon(Icons.star_border, color: Colors.amber),
+                IconButton(
+                  icon: const Icon(Icons.call, color: Colors.green),
+                  onPressed: () => _makeDirectCall(_contact!.phone),
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.redAccent),
                   onPressed: () {
@@ -169,7 +202,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                                   await DatabaseHelper().deleteContact(_contact!.id!);
                                 }
                                 Navigator.of(context).pop();
-                                Navigator.of(context).pop(true); // kembali ke halaman utama
+                                Navigator.of(context).pop(true);
                               },
                             ),
                           ],
@@ -197,7 +230,8 @@ class ContactLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
+      decoration:
+          BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
       child: Text(label, style: const TextStyle(color: Colors.black87)),
     );
   }
@@ -225,7 +259,9 @@ class ContactInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+        ],
       ),
       child: Row(
         children: [
