@@ -30,7 +30,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Contact App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        fontFamily: 'Calsans',
+        primarySwatch: Colors.blue),
       initialRoute: '/',
       routes: {
         '/': (context) => const ContactsPage(),

@@ -35,7 +35,7 @@ class _AddContactPageState extends State<AddContactPage> {
     if (name.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Harap isi Nama dan Telepon'),
+          content: Text('Please enter name and phone number'),
           backgroundColor: Colors.red,
         ),
       );
@@ -64,7 +64,7 @@ class _AddContactPageState extends State<AddContactPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Kontak berhasil disimpan'),
+          content: Text('Contact saved successfully'),
           backgroundColor: Colors.green,
         ),
       );
@@ -88,7 +88,7 @@ class _AddContactPageState extends State<AddContactPage> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menyimpan kontak: $e'),
+          content: Text('Failed to save contact: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -137,7 +137,7 @@ class _AddContactPageState extends State<AddContactPage> {
                         child: const Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Kontak Baru',
+                            'New Contact',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -185,13 +185,13 @@ class _AddContactPageState extends State<AddContactPage> {
                           children: [
                             CustomInputField(
                               icon: Icons.person_outline,
-                              hint: 'Nama',
+                              hint: 'Name',
                               controller: nameController,
                             ),
                             const SizedBox(height: 16),
                             CustomInputField(
                               icon: Icons.phone_outlined,
-                              hint: 'Telepon',
+                              hint: 'Phone',
                               controller: phoneController,
                               keyboardType: TextInputType.phone,
                             ),
@@ -258,8 +258,8 @@ class _AddContactPageState extends State<AddContactPage> {
                         ),
                         label: Text(
                           showMore
-                              ? "Tampilkan lebih sedikit"
-                              : "Tampilkan lebih banyak",
+                              ? "Show less"
+                              : "Show more",
                           style: const TextStyle(color: Colors.deepPurple),
                         ),
                       ),
@@ -288,7 +288,7 @@ class _AddContactPageState extends State<AddContactPage> {
                                   ),
                                 ),
                                 child: const Text(
-                                  'Simpan',
+                                  'Save',
                                   style: TextStyle(color: Colors.deepPurple),
                                 ),
                               ),
@@ -312,7 +312,7 @@ class _AddContactPageState extends State<AddContactPage> {
                                   ),
                                 ),
                                 child: const Text(
-                                  'Batal',
+                                  'Cancel',
                                   style: TextStyle(color: Colors.deepPurple),
                                 ),
                               ),
