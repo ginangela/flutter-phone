@@ -188,15 +188,15 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                       context: context,
                       builder: (BuildContext context) {
                         return AlertDialog(
-                          title: const Text("Konfirmasi"),
-                          content: const Text("Apakah Anda yakin ingin menghapus nomor ini?"),
+                          title: const Text("Confirmation"),
+                          content: const Text("Are you sure to delete this number?"),
                           actions: [
                             TextButton(
-                              child: const Text("Tidak"),
+                              child: const Text("No"),
                               onPressed: () => Navigator.of(context).pop(),
                             ),
                             TextButton(
-                              child: const Text("Ya"),
+                              child: const Text("Yes"),
                               onPressed: () async {
                                 if (_contact!.id != null) {
                                   await DatabaseHelper().deleteContact(_contact!.id!);
